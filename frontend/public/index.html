@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vehicle Marketplace — AI Chatbot</title>
+  <style>
+    :root{--accent:#0f62fe;--muted:#6b7280;--card:#ffffff;--bg:#f3f4f6}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;background:var(--bg);color:#111}
+    header{background:linear-gradient(90deg,#0f172a 0%, #0b1220 100%);color:#fff;padding:18px 24px;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#6c63ff);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
+    .searchbar{max-width:680px;flex:1;margin:0 24px}
+    .searchbar input{width:100%;padding:12px 16px;border-radius:10px;border:none;font-size:15px}
+    .container{max-width:1100px;margin:22px auto;padding:0 18px}
+
+    .filters{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+    .filter, .btn{background:var(--card);border-radius:10px;padding:10px 12px;box-shadow:0 1px 3px rgba(16,24,40,0.05);border:1px solid rgba(15,23,42,0.04)}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .card{background:var(--card);padding:12px;border-radius:12px;box-shadow:0 6px 18px rgba(16,24,40,0.06);display:flex;flex-direction:column}
+    .card img{width:100%;height:160px;object-fit:cover;border-radius:8px}
+    .meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+    .price{font-weight:700}
+    .muted{color:var(--muted);font-size:13px}
+
+    /* Chatbot UI */
+    .chat-button{position:fixed;right:22px;bottom:22px;background:var(--accent);color:#fff;border:none;border-radius:999px;padding:14px 16px;font-weight:600;box-shadow:0 8px 24px rgba(15,98,254,0.18);cursor:pointer}
+    .chat-modal{position:fixed;right:22px;bottom:82px;width:360px;max-height:70vh;background:#fff;border-radius:12px;box-shadow:0 18px 40px rgba(2,6,23,0.2);overflow:hidden;display:flex;flex-direction:column}
+    .chat-header{background:#0f172a;color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
+    .chat-body{padding:12px;overflow:auto;flex:1;background:linear-gradient(180deg,#f8fafc, #fff)}
+    .message{max-width:78%;padding:10px 12px;border-radius:10px;margin:8px 0;line-height:1.35}
+    .message.user{background:#e6f0ff;align-self:flex-end}
+    .message.bot{background:#f1f5f9;align-self:flex-start}
+    .chat-footer{padding:10px;display:flex;gap:8px;background:#fff}
+    .chat-footer input{flex:1;padding:10px;border-radius:8px;border:1px solid #e6e9ef}
+    .chat-footer button{padding:10px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+
+    /* suggested prompts */
+    .suggests{display:flex;gap:8px;padding:8px 12px;border-top:1px solid #eef2ff;background:#fbfdff;flex-wrap:wrap}
+    .chip{background:#f1f5f9;padding:8px 10px;border-radius:999px;font-size:13px;cursor:pointer}
+
+    /* responsive */
+    @media (max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}.searchbar{display:none}}
+    @media (max-width:640px){.grid{grid-template-columns:1fr}.chat-modal{right:10px;left:10px;width:auto;bottom:80px}}
+
+    footer{padding:20px;text-align:center;color:var(--muted)}
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">VM</div>
+      <div>
+        <div style="font-weight:700">Vehicle Marketplace</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.75)">Jual & Beli Kendaraan Bekas — dengan Bantuan Chatbot AI</div>
+      </div>
+    </div>
+    <div class="searchbar">
+      <input id="q" placeholder="Cari: merek, model, lokasi... (mis. Toyota Avanza, Jakarta)" />
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn" id="login">Masuk</button>
+      <button class="btn" id="sell">Jual Sekarang</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="filters">
+      <div class="filter">Kategori
+        <select id="category">
+          <option value="">Semua</option>
+          <option value="mobil">Mobil</option>
+          <option value="motor">Motor</option>
+        </select>
+      </div>
+      <div class="filter">Harga
+        <select id="priceRange">
+          <option value="">Semua</option>
+          <option value="0-50000000">&lt; 50 juta</option>
+          <option value="50000000-150000000">50 - 150 juta</option>
+          <option value="150000000-9999999999">&gt; 150 juta</option>
+        </select>
+      </div>
+      <div class="filter">Lokasi
+        <input id="location" placeholder="Kota atau provinsi" />
+      </div>
+      <div style="margin-left:auto" class="filter">
+        <button id="apply">Terapkan</button>
+      </div>
+    </div>
+
+    <section id="listings" class="grid">
+      <!-- cards injected by JavaScript -->
+    </section>
+
+    <footer>
+      © <span id="year"></span> Vehicle Marketplace — Dibuat dengan AI ✨
+    </footer>
+  </main>
+
+  <!-- Chatbot button -->
+  <button class="chat-button" id="openChat">Chat dengan AI</button>
+
+  <!-- Chat modal (hidden initially) -->
+  <div class="chat-modal" id="chatModal" style="display:none">
+    <div class="chat-header">
+      <div>Asisten Marketplace</div>
+      <div style="font-size:13px;opacity:.9">AI Chatbot</div>
+    </div>
+    <div class="chat-body" id="chatBody">
+      <!-- messages -->
+    </div>
+    <div class="suggests" id="suggests">
+      <div class="chip">Cari mobil keluarga</div>
+      <div class="chip">Rekomendasi Avanza 2015</div>
+      <div class="chip">Perkiraan harga jual</div>
+    </div>
+    <div class="chat-footer">
+      <input id="chatInput" placeholder="Tanyakan sesuatu tentang kendaraan..." />
+      <button id="send">Kirim</button>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Sample data (replace with real API) ----------
+    let listingsData = [];
+
+async function loadListings(){
+  try{
+    const res = await fetch('/api/vehicles');
+    listingsData = await res.json();
+    renderListings(listingsData);
+  }catch(err){
+    console.error('Gagal mengambil data:', err);
+  }
+}
+
+loadListings();
+
+
+    // render listings
+    const listingsEl = document.getElementById('listings');
+    function formatRupiah(num){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR'}).format(num)}
+    function renderListings(data){
+      listingsEl.innerHTML = '';
+      data.forEach(item=>{
+        const div = document.createElement('div');div.className='card';
+        div.innerHTML = `
+          <img src="${item.img}" alt="${item.title}" />
+          <div style="margin-top:8px">
+            <div style="font-weight:700">${item.title}</div>
+            <div class="muted">${item.location} • ${item.kms} km</div>
+            <div class="meta">
+              <div class="price">${formatRupiah(item.price)}</div>
+              <button class="btn" onclick="openDetail(${item.id})">Detail</button>
+            </div>
+          </div>
+        `;
+        listingsEl.appendChild(div);
+      });
+    }
+    renderListings(listingsData);
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // simple filter
+    document.getElementById('apply').addEventListener('click',()=>{
+      const q = document.getElementById('q').value.toLowerCase();
+      const cat = document.getElementById('category').value;
+      const loc = document.getElementById('location').value.toLowerCase();
+      const priceRange = document.getElementById('priceRange').value;
+
+      let res = listingsData.filter(it=>{
+        if(cat && it.category!==cat) return false;
+        if(q && !(`${it.title} ${it.location}`).toLowerCase().includes(q)) return false;
+        if(loc && !it.location.toLowerCase().includes(loc)) return false;
+        if(priceRange){
+          const [min,max]=priceRange.split('-').map(Number);
+          if(it.price<min || it.price>max) return false;
+        }
+        return true;
+      });
+      renderListings(res);
+    });
+
+    window.openDetail = function(id){
+      const item = listingsData.find(x=>x.id===id);
+      if(!item) return alert('Data tidak ditemukan');
+      // For now show quick detail via alert. You can replace with modal.
+      alert(item.title + "\n" + formatRupiah(item.price) + "\nLokasi: " + item.location + "\nKM: " + item.kms);
+    }
+
+    const openChat = document.getElementById('openChat');
+    const chatModal = document.getElementById('chatModal');
+    const chatBody = document.getElementById('chatBody');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('send');
+    const suggests = document.getElementById('suggests');
+
+    openChat.addEventListener('click',()=>{
+      chatModal.style.display = chatModal.style.display === 'none' ? 'flex' : 'none';
+      if(chatModal.style.display==='flex') chatInput.focus();
+    });
+
+    suggests.addEventListener('click', (e)=>{
+      if(e.target.classList.contains('chip')){
+        chatInput.value = e.target.textContent;
+        chatInput.focus();
+      }
+    });
+
+    function appendMessage(text,who='bot'){
+      const m = document.createElement('div');
+      m.className = 'message ' + (who==='user' ? 'user' : 'bot');
+      m.textContent = text;
+      chatBody.appendChild(m);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    // Typing indicator
+    function appendTyping(){
+      const t = document.createElement('div');
+      t.className = 'message bot';
+      t.id = 'typing';
+      t.textContent = 'AI sedang menulis...';
+      chatBody.appendChild(t);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+    function removeTyping(){
+      const t = document.getElementById('typing'); if(t) t.remove();
+    }
+
+    const API_URL = '/api/chat'; 
+
+    async function sendMessageToAI(message){
+      
+      try{
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({message})
+        });
+        if(!res.ok) throw new Error('Server error ' + res.status);
+        const data = await res.json();
+        return data.reply || JSON.stringify(data);
+      }catch(err){
+        console.error(err);
+        return 'Maaf, terjadi kesalahan saat berkomunikasi dengan server AI.';
+      }
+    }
+
+    sendBtn.addEventListener('click', async ()=>{
+      const txt = chatInput.value.trim(); if(!txt) return;
+      appendMessage(txt,'user');
+      chatInput.value='';
+      appendTyping();
+      const reply = await sendMessageToAI(txt);
+      removeTyping();
+      appendMessage(reply,'bot');
+    });
+    chatInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); sendBtn.click(); } });
+    appendMessage('Halo! Saya asisten virtual. Tanyakan soal kendaraan, rekomendasi, atau minta estimasi harga.');
+  </script>
+</body>
+</html>
