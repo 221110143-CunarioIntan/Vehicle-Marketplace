@@ -6,3 +6,4 @@ Kami membuat Website jual beli kendaraan bekas berbasis Chatbot AI
 Code code ini terinspirasi dari kita yang sering mengalami kesusahan dalam menemukan kendaraan yang tepat saat kita kurang memahami tentang dunia otomotif
 Kita menggunakan Postgresql untuk database kita
 Kita juga menggunakan Chatbot AI dari Gemini dengan API sesuai dengan yang telah tertera di dalam code Vehicle-Marketplace
+dataset = https://www.kaggle.com/datasets/austinreese/craigslist-carstrucks-data
